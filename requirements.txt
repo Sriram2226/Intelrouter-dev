@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+supabase
+redis
+scikit-learn
+transformers
+torch
+nltk
+httpx
+pydantic
+pydantic-settings
+huggingface_hub
+
+
