@@ -3,81 +3,133 @@ from typing import List, Optional
 from app.db.supabase_client import supabase
 from app.db.models import User, Query, UsageLog
 from app.config import settings
+from app.utils.logger import get_logger
+
+logger = get_logger("intelrouter.db.operations")
 
 
 def get_user(user_id: str) -> Optional[User]:
     """Get user by ID."""
-    response = supabase.table("users").select("*").eq("id", user_id).execute()
-    if response.data:
-        return User(**response.data[0])
-    return None
+    logger.debug(f"   🔍 Fetching user from database: {user_id[:8]}...")
+    try:
+        response = supabase.table("users").select("*").eq("id", user_id).execute()
+        if response.data:
+            user = User(**response.data[0])
+            logger.debug(f"   ✅ User found: {user.email}")
+            return user
+        logger.debug(f"   ⚠️  User not found: {user_id[:8]}...")
+        return None
+    except Exception as e:
+        logger.error(f"   ❌ Error fetching user: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
 
 
 def create_user(user_id: str, email: str, role: str = "user") -> User:
     """Create or update user."""
-    user_data = {
-        "id": user_id,
-        "email": email,
-        "role": role,
-        "created_at": datetime.utcnow().isoformat()
-    }
-    response = supabase.table("users").upsert(user_data).execute()
-    return User(**response.data[0])
+    logger.info(f"   ➕ Creating/updating user: {email} | Role: {role}")
+    try:
+        user_data = {
+            "id": user_id,
+            "email": email,
+            "role": role,
+            "created_at": datetime.utcnow().isoformat()
+        }
+        response = supabase.table("users").upsert(user_data).execute()
+        user = User(**response.data[0])
+        logger.info(f"   ✅ User created/updated: {user.id[:8]}...")
+        return user
+    except Exception as e:
+        logger.error(f"   ❌ Error creating user: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
 
 
 def save_query(query: Query) -> Query:
     """Save query to database."""
-    query_data = query.model_dump(exclude={"id", "created_at"})
-    query_data["created_at"] = datetime.utcnow().isoformat()
-    response = supabase.table("queries").insert(query_data).execute()
-    return Query(**response.data[0])
+    logger.debug(f"   💾 Saving query | Model: {query.model_name} | Difficulty: {query.final_label}")
+    try:
+        query_data = query.model_dump(exclude={"id", "created_at"})
+        query_data["created_at"] = datetime.utcnow().isoformat()
+        response = supabase.table("queries").insert(query_data).execute()
+        saved_query = Query(**response.data[0])
+        logger.debug(f"   ✅ Query saved with ID: {saved_query.id}")
+        return saved_query
+    except Exception as e:
+        logger.error(f"   ❌ Error saving query: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
 
 
 def save_usage_log(usage_log: UsageLog) -> UsageLog:
     """Save usage log to database."""
-    log_data = usage_log.model_dump(exclude={"id", "created_at"})
-    log_data["created_at"] = datetime.utcnow().isoformat()
-    response = supabase.table("usage_logs").insert(log_data).execute()
-    return UsageLog(**response.data[0])
+    logger.debug(
+        f"   💾 Saving usage log | Tokens: {usage_log.total_tokens:,} | "
+        f"Cost: ${usage_log.cost:.4f} | Model: {usage_log.model_name}"
+    )
+    try:
+        log_data = usage_log.model_dump(exclude={"id", "created_at"})
+        log_data["created_at"] = datetime.utcnow().isoformat()
+        response = supabase.table("usage_logs").insert(log_data).execute()
+        saved_log = UsageLog(**response.data[0])
+        logger.debug(f"   ✅ Usage log saved with ID: {saved_log.id}")
+        return saved_log
+    except Exception as e:
+        logger.error(f"   ❌ Error saving usage log: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
 
 
 def get_user_queries(user_id: str, limit: int = 50) -> List[Query]:
     """Get user's query history."""
-    response = (
-        supabase.table("queries")
-        .select("*")
-        .eq("user_id", user_id)
-        .order("created_at", desc=False)
-        .limit(limit)
-        .execute()
-    )
-    # Reverse to get newest first
-    data = response.data if response.data else []
-    data.reverse()
-    return [Query(**item) for item in data]
+    logger.debug(f"   🔍 Fetching query history | User: {user_id[:8]}... | Limit: {limit}")
+    try:
+        response = (
+            supabase.table("queries")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("created_at", desc=False)
+            .limit(limit)
+            .execute()
+        )
+        # Reverse to get newest first
+        data = response.data if response.data else []
+        data.reverse()
+        queries = [Query(**item) for item in data]
+        logger.debug(f"   ✅ Retrieved {len(queries)} queries")
+        return queries
+    except Exception as e:
+        logger.error(f"   ❌ Error fetching queries: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
 
 
 def get_user_usage_today(user_id: str) -> dict:
     """Get user's usage stats for today."""
-    today = datetime.utcnow().date().isoformat()
-    response = (
-        supabase.table("usage_logs")
-        .select("tokens_in, tokens_out, total_tokens, cost")
-        .eq("user_id", user_id)
-        .gte("created_at", f"{today}T00:00:00")
-        .execute()
-    )
-    
-    data = response.data if response.data else []
-    total_tokens = sum(item["total_tokens"] for item in data)
-    total_cost = sum(item["cost"] for item in data)
-    count = len(data)
-    
-    return {
-        "total_tokens": total_tokens,
-        "total_cost": total_cost,
-        "request_count": count
-    }
+    logger.debug(f"   🔍 Fetching today's usage | User: {user_id[:8]}...")
+    try:
+        today = datetime.utcnow().date().isoformat()
+        response = (
+            supabase.table("usage_logs")
+            .select("tokens_in, tokens_out, total_tokens, cost")
+            .eq("user_id", user_id)
+            .gte("created_at", f"{today}T00:00:00")
+            .execute()
+        )
+        
+        data = response.data if response.data else []
+        total_tokens = sum(item["total_tokens"] for item in data)
+        total_cost = sum(item["cost"] for item in data)
+        count = len(data)
+        
+        logger.debug(
+            f"   ✅ Usage stats | Tokens: {total_tokens:,} | "
+            f"Cost: ${total_cost:.4f} | Requests: {count}"
+        )
+        
+        return {
+            "total_tokens": total_tokens,
+            "total_cost": total_cost,
+            "request_count": count
+        }
+    except Exception as e:
+        logger.error(f"   ❌ Error fetching usage: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
 
 
 def get_admin_metrics() -> dict:
