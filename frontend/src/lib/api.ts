@@ -97,6 +97,11 @@ export const api = {
     const response = await apiFetch('/api/admin/routing-stats');
     return response.json();
   },
+
+  getAdminUsageOverTime: async (days: number = 30) => {
+    const response = await apiFetch(`/api/admin/usage-over-time?days=${days}`);
+    return response.json();
+  },
 };
 
 export default api;

@@ -88,3 +88,31 @@ async def get_routing_stats_endpoint(
         logger.error(f"   ❌ Error getting routing stats: {type(e).__name__}: {str(e)} | Duration: {duration:.3f}s", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving routing stats: {str(e)}")
 
+
+@router.get("/usage-over-time")
+async def get_usage_over_time_endpoint(
+    days: int = 30,
+    user_info: dict = Depends(verify_admin),
+    x_admin_secret: str = Header(None)
+):
+    """Get usage statistics over time."""
+    start_time = time.time()
+    user_id = user_info["user_id"]
+    
+    logger.info(f"📊 ADMIN_USAGE_OVER_TIME | User: {user_id[:8]}... | Days: {days}")
+    
+    if not x_admin_secret or not verify_admin_secret(x_admin_secret):
+        logger.warning(f"   ⛔ Admin secret verification failed")
+        raise HTTPException(status_code=403, detail="Admin secret required")
+    
+    try:
+        from app.db.operations import get_usage_over_time
+        usage_data = get_usage_over_time(days)
+        duration = time.time() - start_time
+        logger.info(f"   ✅ Usage over time retrieved | Records: {len(usage_data)} | Duration: {duration:.3f}s")
+        return {"data": usage_data, "days": days}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(f"   ❌ Error getting usage over time: {type(e).__name__}: {str(e)} | Duration: {duration:.3f}s", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error retrieving usage over time: {str(e)}")
+

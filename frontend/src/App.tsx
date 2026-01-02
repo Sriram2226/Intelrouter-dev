@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Usage from "./pages/Usage";
 import History from "./pages/History";
 import Admin from "./pages/Admin";
+import AdminMetrics from "./pages/AdminMetrics";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
@@ -61,6 +62,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/metrics"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminMetrics />
                 </ProtectedRoute>
               }
             />

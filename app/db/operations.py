@@ -217,3 +217,74 @@ def get_queries_by_time_range(
     data = response.data if response.data else []
     return [Query(**item) for item in data]
 
+
+def get_usage_over_time(days: int = 30) -> List[dict]:
+    """Get usage statistics over time for the last N days."""
+    from datetime import timedelta
+    
+    end_date = datetime.utcnow()
+    start_date = end_date - timedelta(days=days)
+    
+    logger.debug(f"   📊 Fetching usage over time | Start: {start_date.date()} | End: {end_date.date()}")
+    
+    try:
+        response = (
+            supabase.table("usage_logs")
+            .select("created_at, total_tokens, cost, difficulty")
+            .gte("created_at", start_date.isoformat())
+            .order("created_at", desc=False)
+            .execute()
+        )
+        
+        # Group by date
+        daily_stats = {}
+        data = response.data if response.data else []
+        
+        for item in data:
+            date_str = item["created_at"][:10]  # Extract date part (YYYY-MM-DD)
+            if date_str not in daily_stats:
+                daily_stats[date_str] = {
+                    "date": date_str,
+                    "tokens": 0,
+                    "cost": 0,
+                    "queries": 0,
+                    "easy": 0,
+                    "medium": 0,
+                    "hard": 0
+                }
+            
+            daily_stats[date_str]["tokens"] += item["total_tokens"]
+            daily_stats[date_str]["cost"] += item["cost"]
+            daily_stats[date_str]["queries"] += 1
+            
+            difficulty = item.get("difficulty", "").upper()
+            if difficulty in ["EASY", "MEDIUM", "HARD"]:
+                daily_stats[date_str][difficulty.lower()] += 1
+        
+        # Fill in missing dates with zeros
+        result = []
+        current_date = start_date.date()
+        end_date_only = end_date.date()
+        
+        while current_date <= end_date_only:
+            date_str = current_date.isoformat()
+            if date_str in daily_stats:
+                result.append(daily_stats[date_str])
+            else:
+                result.append({
+                    "date": date_str,
+                    "tokens": 0,
+                    "cost": 0,
+                    "queries": 0,
+                    "easy": 0,
+                    "medium": 0,
+                    "hard": 0
+                })
+            current_date += timedelta(days=1)
+        
+        logger.debug(f"   ✅ Usage over time retrieved | Records: {len(result)}")
+        return result
+    except Exception as e:
+        logger.error(f"   ❌ Error fetching usage over time: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
+

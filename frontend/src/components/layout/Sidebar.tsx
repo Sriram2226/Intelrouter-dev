@@ -70,6 +70,7 @@ const SidebarContent = ({ isAdmin = false, onNavClick }: SidebarContentProps) =>
 
   const adminItems = [
     { to: "/admin", icon: <Shield className="w-4 h-4" />, label: "Admin Panel" },
+    { to: "/admin/metrics", icon: <BarChart3 className="w-4 h-4" />, label: "Usage Metrics" },
   ];
 
   return (
