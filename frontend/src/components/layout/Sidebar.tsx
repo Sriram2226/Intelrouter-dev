@@ -89,7 +89,7 @@ const SidebarContent = ({ isAdmin = false, onNavClick }: SidebarContentProps) =>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 px-3">
           Main
         </p>
@@ -172,7 +172,7 @@ export const Sidebar = ({ isAdmin = false }: SidebarProps) => {
   const actualIsAdmin = userInfo?.role === 'admin';
   
   return (
-    <aside className="hidden lg:flex w-64 h-screen bg-sidebar border-r border-sidebar-border flex-col">
+    <aside className="hidden lg:flex fixed left-0 top-0 w-64 h-screen bg-sidebar border-r border-sidebar-border flex-col z-40">
       <SidebarContent isAdmin={actualIsAdmin} />
     </aside>
   );
