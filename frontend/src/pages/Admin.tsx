@@ -7,8 +7,12 @@ import {
   DollarSign,
   TrendingUp,
   PieChart,
-  Route
+  Route,
+  Loader2
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/lib/api";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface MetricCardProps {
   title: string;
@@ -42,27 +46,21 @@ const MetricCard = ({ title, value, icon, trend, description }: MetricCardProps)
 );
 
 const Admin = () => {
-  // Mock metrics data
-  const metrics = {
-    total_users: 1247,
-    total_queries: 45892,
-    total_tokens: 12450000,
-    total_cost: 124.50,
-  };
+  // Fetch data from backend
+  const { data: metrics, isLoading: metricsLoading, error: metricsError } = useQuery({
+    queryKey: ['adminMetrics'],
+    queryFn: () => api.getAdminMetrics(),
+  });
 
-  // Mock cost breakdown
-  const costBreakdown = [
-    { label: "EASY", cost: 12.40, percentage: 10, color: "bg-easy" },
-    { label: "MEDIUM", cost: 49.80, percentage: 40, color: "bg-medium" },
-    { label: "HARD", cost: 62.30, percentage: 50, color: "bg-hard" },
-  ];
+  const { data: costs, isLoading: costsLoading, error: costsError } = useQuery({
+    queryKey: ['adminCosts'],
+    queryFn: () => api.getAdminCosts(),
+  });
 
-  // Mock routing stats
-  const routingStats = [
-    { label: "Algorithmic", count: 32124, percentage: 70, color: "bg-primary" },
-    { label: "ML Model", count: 11018, percentage: 24, color: "bg-secondary" },
-    { label: "User Override", count: 2750, percentage: 6, color: "bg-accent" },
-  ];
+  const { data: routingStats, isLoading: routingLoading, error: routingError } = useQuery({
+    queryKey: ['adminRoutingStats'],
+    queryFn: () => api.getAdminRoutingStats(),
+  });
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -81,6 +79,104 @@ const Admin = () => {
     }).format(num);
   };
 
+  // Transform cost data for display
+  const costBreakdown = costs ? (() => {
+    const totalCost = (costs.EASY?.cost || 0) + (costs.MEDIUM?.cost || 0) + (costs.HARD?.cost || 0);
+    const easyCost = costs.EASY?.cost || 0;
+    const mediumCost = costs.MEDIUM?.cost || 0;
+    const hardCost = costs.HARD?.cost || 0;
+    
+    return [
+      { 
+        label: "EASY", 
+        cost: easyCost, 
+        percentage: totalCost > 0 ? Math.round((easyCost / totalCost) * 100) : 0, 
+        color: "bg-easy" 
+      },
+      { 
+        label: "MEDIUM", 
+        cost: mediumCost, 
+        percentage: totalCost > 0 ? Math.round((mediumCost / totalCost) * 100) : 0, 
+        color: "bg-medium" 
+      },
+      { 
+        label: "HARD", 
+        cost: hardCost, 
+        percentage: totalCost > 0 ? Math.round((hardCost / totalCost) * 100) : 0, 
+        color: "bg-hard" 
+      },
+    ];
+  })() : [];
+
+  // Transform routing stats for display
+  const routingStatsDisplay = routingStats ? (() => {
+    const totalQueries = (routingStats.routing_sources?.algorithmic || 0) + 
+                        (routingStats.routing_sources?.ml || 0) + 
+                        (routingStats.routing_sources?.user_override || 0);
+    
+    const algorithmic = routingStats.routing_sources?.algorithmic || 0;
+    const ml = routingStats.routing_sources?.ml || 0;
+    const userOverride = routingStats.routing_sources?.user_override || 0;
+    
+    return [
+      { 
+        label: "Algorithmic", 
+        count: algorithmic, 
+        percentage: totalQueries > 0 ? Math.round((algorithmic / totalQueries) * 100) : 0, 
+        color: "bg-primary" 
+      },
+      { 
+        label: "ML Model", 
+        count: ml, 
+        percentage: totalQueries > 0 ? Math.round((ml / totalQueries) * 100) : 0, 
+        color: "bg-secondary" 
+      },
+      { 
+        label: "User Override", 
+        count: userOverride, 
+        percentage: totalQueries > 0 ? Math.round((userOverride / totalQueries) * 100) : 0, 
+        color: "bg-accent" 
+      },
+    ];
+  })() : [];
+
+  const isLoading = metricsLoading || costsLoading || routingLoading;
+  const hasError = metricsError || costsError || routingError;
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-6xl mx-auto space-y-4 sm:space-y-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center space-y-4">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+              <p className="text-muted-foreground">Loading admin data...</p>
+            </div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-6xl mx-auto space-y-4 sm:space-y-8">
+          <Alert variant="destructive">
+            <AlertDescription>
+              Failed to load admin data. Please check your connection and try again.
+              {metricsError && <div className="mt-2">Metrics: {metricsError.message}</div>}
+              {costsError && <div className="mt-2">Costs: {costsError.message}</div>}
+              {routingError && <div className="mt-2">Routing Stats: {routingError.message}</div>}
+            </AlertDescription>
+          </Alert>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  const totalCost = metrics?.total_cost || 0;
+
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-8">
@@ -96,27 +192,24 @@ const Admin = () => {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard
             title="Total Users"
-            value={formatNumber(metrics.total_users)}
+            value={formatNumber(metrics?.total_users || 0)}
             icon={<Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />}
-            trend={8}
           />
           <MetricCard
             title="Total Queries"
-            value={formatNumber(metrics.total_queries)}
+            value={formatNumber(metrics?.total_queries || 0)}
             icon={<MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />}
-            trend={15}
           />
           <MetricCard
             title="Total Tokens"
-            value={formatNumber(metrics.total_tokens)}
+            value={formatNumber(metrics?.total_tokens || 0)}
             icon={<Coins className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />}
             description="All time usage"
           />
           <MetricCard
             title="Total Revenue"
-            value={formatCurrency(metrics.total_cost)}
+            value={formatCurrency(totalCost)}
             icon={<DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />}
-            trend={12}
           />
         </div>
 
@@ -134,30 +227,34 @@ const Admin = () => {
             </div>
 
             <div className="space-y-3 sm:space-y-4">
-              {costBreakdown.map((item) => (
-                <div key={item.label} className="space-y-2">
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="font-medium text-foreground">{item.label}</span>
-                    <span className="text-muted-foreground">
-                      {formatCurrency(item.cost)} ({item.percentage}%)
-                    </span>
+              {costBreakdown.length > 0 ? (
+                costBreakdown.map((item) => (
+                  <div key={item.label} className="space-y-2">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="font-medium text-foreground">{item.label}</span>
+                      <span className="text-muted-foreground">
+                        {formatCurrency(item.cost)} ({item.percentage}%)
+                      </span>
+                    </div>
+                    <Progress 
+                      value={item.percentage} 
+                      className="h-2"
+                      style={{ 
+                        '--progress-background': `var(--${item.label.toLowerCase()})` 
+                      } as React.CSSProperties}
+                    />
                   </div>
-                  <Progress 
-                    value={item.percentage} 
-                    className="h-2"
-                    style={{ 
-                      '--progress-background': `var(--${item.label.toLowerCase()})` 
-                    } as React.CSSProperties}
-                  />
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No cost data available</p>
+              )}
             </div>
 
             <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
               <div className="flex items-center justify-between">
                 <span className="text-xs sm:text-sm text-muted-foreground">Total Cost</span>
                 <span className="text-base sm:text-lg font-semibold text-foreground">
-                  {formatCurrency(metrics.total_cost)}
+                  {formatCurrency(totalCost)}
                 </span>
               </div>
             </div>
@@ -176,29 +273,33 @@ const Admin = () => {
             </div>
 
             <div className="space-y-3 sm:space-y-4">
-              {routingStats.map((item) => (
-                <div key={item.label} className="space-y-2">
-                  <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="font-medium text-foreground">{item.label}</span>
-                    <span className="text-muted-foreground">
-                      {formatNumber(item.count)} ({item.percentage}%)
-                    </span>
+              {routingStatsDisplay.length > 0 ? (
+                routingStatsDisplay.map((item) => (
+                  <div key={item.label} className="space-y-2">
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="font-medium text-foreground">{item.label}</span>
+                      <span className="text-muted-foreground">
+                        {formatNumber(item.count)} ({item.percentage}%)
+                      </span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${item.color} transition-all duration-500`}
+                        style={{ width: `${item.percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full ${item.color} transition-all duration-500`}
-                      style={{ width: `${item.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-4">No routing data available</p>
+              )}
             </div>
 
             <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border">
               <div className="flex items-center justify-between">
                 <span className="text-xs sm:text-sm text-muted-foreground">Total Queries</span>
                 <span className="text-base sm:text-lg font-semibold text-foreground">
-                  {formatNumber(metrics.total_queries)}
+                  {formatNumber(metrics?.total_queries || 0)}
                 </span>
               </div>
             </div>
