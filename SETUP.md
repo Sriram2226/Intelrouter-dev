@@ -151,3 +151,5 @@ To access admin endpoints:
 - Admin routes require both auth and admin role
 - API client automatically includes auth tokens in requests
 
+
+
