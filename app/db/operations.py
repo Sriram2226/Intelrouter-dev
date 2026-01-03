@@ -288,3 +288,21 @@ def get_usage_over_time(days: int = 30) -> List[dict]:
         logger.error(f"   ❌ Error fetching usage over time: {type(e).__name__}: {str(e)}", exc_info=True)
         raise
 
+
+def save_ml_data(query: str, difficulty: str) -> dict:
+    """Save query and difficulty to ML training data table."""
+    logger.info(f"   📚 Saving ML training data | Difficulty: {difficulty}")
+    try:
+        ml_data = {
+            "query": query,
+            "difficulty": difficulty.upper(),
+            "created_at": datetime.utcnow().isoformat()
+        }
+        response = supabase.table("ml_data").insert(ml_data).execute()
+        saved_id = response.data[0]['id'] if response.data else None
+        logger.info(f"   ✅ ML data saved with ID: {saved_id}")
+        return {"success": True, "id": saved_id}
+    except Exception as e:
+        logger.error(f"   ❌ Error saving ML data: {type(e).__name__}: {str(e)}", exc_info=True)
+        raise
+

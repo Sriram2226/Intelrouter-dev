@@ -82,6 +82,19 @@ export const api = {
     return response.json();
   },
 
+  submitFeedback: async (query: string, difficulty: string, isCorrect: boolean, correctDifficulty?: string) => {
+    const response = await apiFetch('/api/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        query,
+        difficulty,
+        is_correct: isCorrect,
+        correct_difficulty: correctDifficulty || null,
+      }),
+    });
+    return response.json();
+  },
+
   // Admin
   getAdminMetrics: async () => {
     const response = await apiFetch('/api/admin/metrics');

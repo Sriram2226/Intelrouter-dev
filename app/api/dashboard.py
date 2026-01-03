@@ -1,8 +1,8 @@
 import time
 from fastapi import APIRouter, Depends, HTTPException
-from app.api.schemas import UserInfo, UsageToday, OverrideStatus
+from app.api.schemas import UserInfo, UsageToday, OverrideStatus, FeedbackRequest, FeedbackResponse
 from app.auth.jwt import verify_jwt
-from app.db.operations import get_user, get_user_usage_today, get_user_queries
+from app.db.operations import get_user, get_user_usage_today, get_user_queries, save_ml_data
 from app.utils.redis_client import get_daily_token_usage, get_override_count
 from app.config import settings
 from app.utils.logger import get_logger
@@ -132,4 +132,65 @@ async def get_override_status(user_info: dict = Depends(verify_jwt)):
         duration = time.time() - start_time
         logger.error(f"   ❌ Error getting override status: {type(e).__name__}: {str(e)} | Duration: {duration:.3f}s", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving override status: {str(e)}")
+
+
+@router.post("/feedback", response_model=FeedbackResponse)
+async def submit_feedback(
+    feedback: FeedbackRequest,
+    user_info: dict = Depends(verify_jwt)
+):
+    """Submit routing feedback for ML training."""
+    start_time = time.time()
+    user_id = user_info["user_id"]
+    
+    logger.info(f"📝 SUBMIT_FEEDBACK | User: {user_id[:8]}... | Correct: {feedback.is_correct}")
+    
+    try:
+        if feedback.is_correct:
+            # User says routing is correct - use the current difficulty
+            difficulty = feedback.difficulty.upper()
+            logger.info(f"   ✅ Routing confirmed correct | Difficulty: {difficulty}")
+        else:
+            # User says routing is wrong - use the corrected difficulty
+            if not feedback.correct_difficulty:
+                raise HTTPException(
+                    status_code=400,
+                    detail="correct_difficulty is required when is_correct is false"
+                )
+            difficulty = feedback.correct_difficulty.upper()
+            logger.info(
+                f"   ⚠️  Routing corrected | Original: {feedback.difficulty} | "
+                f"Correct: {difficulty}"
+            )
+        
+        # Validate difficulty
+        if difficulty not in ["EASY", "MEDIUM", "HARD"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Difficulty must be EASY, MEDIUM, or HARD"
+            )
+        
+        # Save to ML data table
+        save_ml_data(feedback.query, difficulty)
+        
+        duration = time.time() - start_time
+        logger.info(f"   ✅ Feedback saved | Duration: {duration:.3f}s")
+        
+        return FeedbackResponse(
+            success=True,
+            message="Feedback saved successfully"
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(
+            f"   ❌ Error submitting feedback: {type(e).__name__}: {str(e)} | "
+            f"Duration: {duration:.3f}s",
+            exc_info=True
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error submitting feedback: {str(e)}"
+        )
 

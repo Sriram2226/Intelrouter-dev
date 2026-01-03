@@ -3,6 +3,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { DifficultyBadge } from "./DifficultyBadge";
+import { FeedbackWidget } from "./FeedbackWidget";
 import { cn } from "@/lib/utils";
 
 interface ResponseData {
@@ -19,6 +20,7 @@ interface ResponseData {
 
 interface ResponseCardProps {
   response: ResponseData;
+  query?: string;
 }
 
 const routingSourceLabels = {
@@ -27,7 +29,7 @@ const routingSourceLabels = {
   user_override: "User Override",
 };
 
-export const ResponseCard = ({ response }: ResponseCardProps) => {
+export const ResponseCard = ({ response, query }: ResponseCardProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -142,6 +144,16 @@ export const ResponseCard = ({ response }: ResponseCardProps) => {
             </span>
           </div>
         </div>
+        
+        {/* Feedback Section */}
+        {query && (
+          <div className="pt-3 border-t border-border">
+            <FeedbackWidget
+              query={query}
+              difficulty={response.difficulty}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -33,3 +33,14 @@ class OverrideStatus(BaseModel):
     used: int
     limit: int
 
+
+class FeedbackRequest(BaseModel):
+    query: str
+    difficulty: str
+    is_correct: bool
+    correct_difficulty: Optional[str] = None  # Required if is_correct is False
+
+
+class FeedbackResponse(BaseModel):
+    success: bool
+    message: str

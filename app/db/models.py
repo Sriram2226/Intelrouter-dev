@@ -34,3 +34,10 @@ class UsageLog(BaseModel):
     cost: float
     created_at: Optional[datetime] = None
 
+
+class MLData(BaseModel):
+    id: Optional[str] = None
+    query: str
+    difficulty: str
+    created_at: Optional[datetime] = None
+

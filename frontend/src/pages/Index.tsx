@@ -24,6 +24,7 @@ interface ResponseData {
 
 const Index = () => {
   const [response, setResponse] = useState<ResponseData | null>(null);
+  const [currentQuery, setCurrentQuery] = useState<string>("");
   const queryClient = useQueryClient();
 
   // Fetch usage and override status
@@ -56,6 +57,7 @@ const Index = () => {
   });
 
   const handleSubmit = async (query: string, difficulty: Difficulty) => {
+    setCurrentQuery(query); // Store the query for feedback
     submitQueryMutation.mutate({ query, difficulty });
   };
 
@@ -97,7 +99,7 @@ const Index = () => {
                 Clear & New Query
               </button>
             </div>
-            <ResponseCard response={response} />
+            <ResponseCard response={response} query={currentQuery} />
           </div>
         ) : !submitQueryMutation.isPending && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
