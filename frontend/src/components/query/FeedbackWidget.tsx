@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ThumbsUp, ThumbsDown, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +30,13 @@ export const FeedbackWidget = ({
     "EASY" | "MEDIUM" | "HARD" | null
   >(null);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+
+  // Reset feedback state when query or difficulty changes
+  useEffect(() => {
+    setFeedbackSubmitted(false);
+    setShowCorrectionDialog(false);
+    setSelectedDifficulty(null);
+  }, [query, difficulty]);
 
   const feedbackMutation = useMutation({
     mutationFn: ({
