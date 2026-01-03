@@ -22,8 +22,13 @@ def route_query(query: str, user_override: Optional[str] = None) -> tuple[str, s
     # Step 2: ML classifier (only for UNSURE)
     if algorithmic_label == "UNSURE":
         ml_label, confidence = classifier.predict(query)
-        difficulty = ml_label
-        routing_source = "ml"
+        # Handle UNCERTAIN predictions (low confidence)
+        if ml_label == "UNCERTAIN":
+            difficulty = "MEDIUM"  # Default to MEDIUM for uncertain predictions
+            routing_source = "ml_uncertain"
+        else:
+            difficulty = ml_label
+            routing_source = "ml"
     else:
         difficulty = algorithmic_label
         routing_source = "algorithmic"

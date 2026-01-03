@@ -11,5 +11,6 @@ httpx
 pydantic
 pydantic-settings
 huggingface_hub
+joblib
 
 
