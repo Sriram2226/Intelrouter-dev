@@ -147,10 +147,11 @@ async def process_query(
             ml_label, _ = classifier.predict(request.query)
         logger.info(f"   🏷️  Labels - Algorithmic: {algorithmic_label}, ML: {ml_label or 'N/A'}")
         
-        # Save query (without query_text for privacy/storage optimization)
+        # Save query (with query_text - will be auto-cleaned after 30 days)
         logger.debug(f"   💾 Saving query to database...")
         query_record = Query(
             user_id=user_id,
+            query_text=request.query,
             algorithmic_label=algorithmic_label,
             ml_label=ml_label,
             final_label=difficulty,

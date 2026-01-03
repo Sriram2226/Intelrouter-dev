@@ -13,6 +13,7 @@ class User(BaseModel):
 class Query(BaseModel):
     id: Optional[str] = None
     user_id: str
+    query_text: Optional[str] = None
     algorithmic_label: Optional[str] = None
     ml_label: Optional[str] = None
     final_label: str

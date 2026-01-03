@@ -93,6 +93,7 @@ async def get_query_history(user_info: dict = Depends(verify_jwt)):
         return [
             {
                 "id": q.id,
+                "query_text": q.query_text,
                 "final_label": q.final_label,
                 "routing_source": q.routing_source,
                 "model_name": q.model_name,

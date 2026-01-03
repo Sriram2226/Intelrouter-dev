@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface HistoryItem {
   id: string;
+  query_text: string | null;
   final_label: "EASY" | "MEDIUM" | "HARD";
   routing_source: "algorithmic" | "ml" | "user_override";
   model_name: string;
@@ -57,35 +58,66 @@ const HistoryRow = ({ item, isExpanded, onToggle }: HistoryRowProps) => {
             <span className="text-xs text-muted-foreground">{formatDate(item.created_at)}</span>
             <DifficultyBadge difficulty={item.final_label} size="sm" />
           </div>
+          {item.query_text && (
+            <div className="mt-2 text-sm text-foreground line-clamp-2">
+              {item.query_text}
+            </div>
+          )}
         </div>
 
         {/* Desktop Layout */}
-        <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground w-20 flex-shrink-0">
-          <Clock className="w-3.5 h-3.5" />
-          {formatDate(item.created_at)}
-        </div>
-
-        <div className="hidden sm:block flex-1 min-w-0">
-          <DifficultyBadge difficulty={item.final_label} size="sm" />
+        <div className="hidden sm:flex items-center gap-4 flex-1 min-w-0">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground w-20 flex-shrink-0">
+            <Clock className="w-3.5 h-3.5" />
+            {formatDate(item.created_at)}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            {item.query_text ? (
+              <div className="text-sm text-foreground truncate" title={item.query_text}>
+                {item.query_text}
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground italic">Query text expired</span>
+            )}
+          </div>
+          
+          <div className="w-24 flex-shrink-0">
+            <DifficultyBadge difficulty={item.final_label} size="sm" />
+          </div>
         </div>
 
         <div className="hidden sm:flex items-center gap-4 flex-shrink-0">
-          <DifficultyBadge difficulty={item.final_label} size="sm" />
+          <div className="w-32 text-center">
+            <span className="font-mono text-xs text-muted-foreground truncate block">
+              {item.model_name}
+            </span>
+          </div>
           
-          <span className={cn(
-            "text-xs px-2 py-1 rounded-md",
-            item.routing_source === "user_override" 
-              ? "bg-primary/10 text-primary" 
-              : "bg-muted text-muted-foreground"
-          )}>
-            {routingSourceLabels[item.routing_source]}
-          </span>
+          <div className="w-24 text-center">
+            <span className={cn(
+              "text-xs px-2 py-1 rounded-md inline-block",
+              item.routing_source === "user_override" 
+                ? "bg-primary/10 text-primary" 
+                : "bg-muted text-muted-foreground"
+            )}>
+              {routingSourceLabels[item.routing_source]}
+            </span>
+          </div>
         </div>
       </button>
 
       {isExpanded && (
         <div className="px-4 sm:px-6 pb-4 pl-10 sm:pl-14 animate-fade-in">
           <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-3">
+            {item.query_text && (
+              <div className="space-y-1.5">
+                <div className="text-xs font-medium text-muted-foreground">Query</div>
+                <div className="text-sm text-foreground bg-background/50 rounded-md p-2.5 border border-border/50">
+                  {item.query_text}
+                </div>
+              </div>
+            )}
             <div className="flex flex-wrap gap-3 sm:gap-4 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <Bot className="w-3.5 h-3.5" />
@@ -137,6 +169,7 @@ const History = () => {
             <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Query History</h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               View your past queries and routing decisions
+              <span className="ml-2 text-xs">(Query text retained for 30 days)</span>
             </p>
           </div>
           <div className="text-xs sm:text-sm text-muted-foreground">
@@ -150,7 +183,8 @@ const History = () => {
           <div className="hidden sm:flex px-6 py-3 border-b border-border bg-muted/30 items-center gap-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">
             <div className="w-4" />
             <div className="w-20">Time</div>
-            <div className="flex-1">Difficulty</div>
+            <div className="flex-1">Query</div>
+            <div className="w-24">Difficulty</div>
             <div className="w-32 text-center">Model</div>
             <div className="w-24 text-center">Source</div>
           </div>
