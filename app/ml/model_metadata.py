@@ -30,7 +30,7 @@ def save_model_metadata(
         
         # Deactivate all previous models if this is active
         if is_active:
-            client.table(METADATA_TABLE).update({"is_active": False}).execute()
+            client.table(METADATA_TABLE).update({"is_active": False}).eq("is_active", True).execute()
         
         metadata = {
             "version": version,
