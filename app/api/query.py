@@ -17,7 +17,8 @@ from app.db.operations import (
     save_query,
     save_usage_log,
     create_user,
-    get_user
+    get_user,
+    save_ml_data
 )
 from app.db.models import Query, UsageLog
 from app.utils.logger import get_logger
@@ -80,6 +81,14 @@ async def process_query(
         if routing_source == "user_override":
             logger.info(f"   🔄 Incrementing override count...")
             increment_override(user_id)
+            # Save override to ML training data (user explicitly selected difficulty)
+            logger.info(f"   📚 Saving override to ML training data...")
+            try:
+                save_ml_data(request.query, difficulty)
+                logger.info(f"   ✅ Override saved to ML data")
+            except Exception as e:
+                logger.warning(f"   ⚠️  Failed to save override to ML data: {str(e)}")
+                # Don't fail the request if ML data save fails
         
         # Check daily token limit
         logger.debug(f"   💰 Checking daily token usage...")
