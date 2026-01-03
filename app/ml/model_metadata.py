@@ -30,7 +30,20 @@ def save_model_metadata(
         
         # Deactivate all previous models if this is active
         if is_active:
-            client.table(METADATA_TABLE).update({"is_active": False}).eq("is_active", True).execute()
+            # First check if there are any active models
+            active_models = client.table(METADATA_TABLE)\
+                .select("id")\
+                .eq("is_active", True)\
+                .execute()
+            
+            # Only update if there are active models
+            if active_models.data:
+                # Update each active model individually (more reliable)
+                for model in active_models.data:
+                    client.table(METADATA_TABLE)\
+                        .update({"is_active": False})\
+                        .eq("id", model["id"])\
+                        .execute()
         
         metadata = {
             "version": version,
