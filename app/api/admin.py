@@ -116,3 +116,106 @@ async def get_usage_over_time_endpoint(
         logger.error(f"   ❌ Error getting usage over time: {type(e).__name__}: {str(e)} | Duration: {duration:.3f}s", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving usage over time: {str(e)}")
 
+
+@router.get("/ml-pipeline")
+async def get_ml_pipeline_info(
+    user_info: dict = Depends(verify_admin),
+    x_admin_secret: str = Header(None)
+):
+    """Get ML model pipeline information."""
+    start_time = time.time()
+    user_id = user_info["user_id"]
+    
+    logger.info(f"🤖 ADMIN_ML_PIPELINE | User: {user_id[:8]}...")
+    
+    if not x_admin_secret or not verify_admin_secret(x_admin_secret):
+        logger.warning(f"   ⛔ Admin secret verification failed")
+        raise HTTPException(status_code=403, detail="Admin secret required")
+    
+    try:
+        from app.ml.model_metadata import get_metadata_client, get_active_model_metadata
+        from app.db.supabase_client import supabase
+        from datetime import datetime
+        from collections import defaultdict
+        
+        client = get_metadata_client()
+        
+        # Get all model versions
+        models_response = client.table("model_metadata")\
+            .select("*")\
+            .order("created_at", desc=True)\
+            .execute()
+        
+        models = models_response.data if models_response.data else []
+        
+        # Get active model
+        active_model = get_active_model_metadata()
+        
+        # Get training data stats
+        ml_data_response = supabase.table("ml_data")\
+            .select("difficulty, created_at")\
+            .execute()
+        
+        ml_data = ml_data_response.data if ml_data_response.data else []
+        
+        # Count by difficulty
+        difficulty_counts = {"EASY": 0, "MEDIUM": 0, "HARD": 0}
+        for item in ml_data:
+            diff = item.get("difficulty", "").upper()
+            if diff in difficulty_counts:
+                difficulty_counts[diff] += 1
+        
+        # Get routing stats from queries table
+        routing_response = supabase.table("queries")\
+            .select("routing_source, created_at")\
+            .execute()
+        
+        routing_data = routing_response.data if routing_response.data else []
+        
+        # Count routing sources
+        routing_counts = {}
+        for item in routing_data:
+            source = item.get("routing_source", "unknown")
+            routing_counts[source] = routing_counts.get(source, 0) + 1
+        
+        # Calculate training data growth over time
+        training_growth = defaultdict(int)
+        for item in ml_data:
+            created_at = item.get("created_at")
+            if created_at:
+                try:
+                    if created_at.endswith('Z'):
+                        date = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    else:
+                        date = datetime.fromisoformat(created_at)
+                    date_key = date.strftime('%Y-%m-%d')
+                    training_growth[date_key] += 1
+                except:
+                    pass
+        
+        # Sort by date
+        training_growth_sorted = sorted(training_growth.items())
+        
+        result = {
+            "active_model": active_model,
+            "all_models": models,
+            "training_data": {
+                "total": len(ml_data),
+                "by_difficulty": difficulty_counts,
+                "growth_over_time": [{"date": k, "count": v} for k, v in training_growth_sorted]
+            },
+            "routing_stats": {
+                "total_queries": len(routing_data),
+                "by_source": routing_counts
+            }
+        }
+        
+        duration = time.time() - start_time
+        logger.info(f"   ✅ ML pipeline info retrieved | Duration: {duration:.3f}s")
+        return result
+        
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(f"   ❌ Error getting ML pipeline info: {type(e).__name__}: {str(e)} | Duration: {duration:.3f}s", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error retrieving ML pipeline info: {str(e)}")
+

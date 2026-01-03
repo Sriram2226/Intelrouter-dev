@@ -9,7 +9,8 @@ import {
   Zap,
   Shield,
   Menu,
-  X
+  X,
+  Brain
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -71,6 +72,7 @@ const SidebarContent = ({ isAdmin = false, onNavClick }: SidebarContentProps) =>
   const adminItems = [
     { to: "/admin", icon: <Shield className="w-4 h-4" />, label: "Admin Panel" },
     { to: "/admin/metrics", icon: <BarChart3 className="w-4 h-4" />, label: "Usage Metrics" },
+    { to: "/admin/ml-pipeline", icon: <Brain className="w-4 h-4" />, label: "ML Pipeline" },
   ];
 
   return (

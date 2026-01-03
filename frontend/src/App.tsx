@@ -10,6 +10,7 @@ import Usage from "./pages/Usage";
 import History from "./pages/History";
 import Admin from "./pages/Admin";
 import AdminMetrics from "./pages/AdminMetrics";
+import MLPipeline from "./pages/MLPipeline";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
@@ -70,6 +71,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireAdmin>
                   <AdminMetrics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/ml-pipeline"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <MLPipeline />
                 </ProtectedRoute>
               }
             />

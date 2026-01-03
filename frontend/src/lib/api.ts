@@ -115,6 +115,11 @@ export const api = {
     const response = await apiFetch(`/api/admin/usage-over-time?days=${days}`);
     return response.json();
   },
+
+  getMLPipelineInfo: async () => {
+    const response = await apiFetch('/api/admin/ml-pipeline');
+    return response.json();
+  },
 };
 
 export default api;
