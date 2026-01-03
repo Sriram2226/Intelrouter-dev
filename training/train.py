@@ -105,7 +105,6 @@ def train_model(X_train, y_train) -> LogisticRegression:
     model = LogisticRegression(
         max_iter=1000,
         random_state=RANDOM_STATE,
-        multi_class='multinomial',
         solver='lbfgs',
         C=1.0
     )
