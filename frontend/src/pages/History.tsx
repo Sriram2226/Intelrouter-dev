@@ -68,10 +68,10 @@ const HistoryRow = ({ item, isExpanded, onToggle }: HistoryRowProps) => {
         {/* Desktop Layout */}
         <div className="hidden sm:flex items-center gap-4 flex-1 min-w-0">
           <div className="flex items-center gap-2 text-xs text-muted-foreground w-20 flex-shrink-0">
-            <Clock className="w-3.5 h-3.5" />
-            {formatDate(item.created_at)}
-          </div>
-          
+          <Clock className="w-3.5 h-3.5" />
+          {formatDate(item.created_at)}
+        </div>
+
           <div className="flex-1 min-w-0">
             {item.query_text ? (
               <div className="text-sm text-foreground truncate" title={item.query_text}>
@@ -83,7 +83,7 @@ const HistoryRow = ({ item, isExpanded, onToggle }: HistoryRowProps) => {
           </div>
           
           <div className="w-24 flex-shrink-0">
-            <DifficultyBadge difficulty={item.final_label} size="sm" />
+          <DifficultyBadge difficulty={item.final_label} size="sm" />
           </div>
         </div>
 
@@ -95,14 +95,14 @@ const HistoryRow = ({ item, isExpanded, onToggle }: HistoryRowProps) => {
           </div>
           
           <div className="w-24 text-center">
-            <span className={cn(
+          <span className={cn(
               "text-xs px-2 py-1 rounded-md inline-block",
-              item.routing_source === "user_override" 
-                ? "bg-primary/10 text-primary" 
-                : "bg-muted text-muted-foreground"
-            )}>
-              {routingSourceLabels[item.routing_source]}
-            </span>
+            item.routing_source === "user_override" 
+              ? "bg-primary/10 text-primary" 
+              : "bg-muted text-muted-foreground"
+          )}>
+            {routingSourceLabels[item.routing_source]}
+          </span>
           </div>
         </div>
       </button>
