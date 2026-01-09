@@ -1,0 +1,23 @@
+# Frontend .dockerignore
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+.git/
+.gitignore
+README.md
+*.md
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+coverage/
+.nyc_output/

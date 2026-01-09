@@ -1,0 +1,21 @@
+# Frontend Development Dockerfile
+# For development with hot reload
+
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev)
+RUN npm install
+
+# Copy source code
+COPY . ./
+
+# Expose Vite dev server port
+EXPOSE 8080
+
+# Start dev server with host binding for Docker
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

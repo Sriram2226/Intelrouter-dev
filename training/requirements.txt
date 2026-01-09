@@ -1,0 +1,15 @@
+# Training dependencies
+# Only includes what's needed for ML model training
+
+# Core ML libraries
+numpy
+scikit-learn
+joblib
+nltk
+
+# Database and storage (for loading data and saving models)
+supabase
+
+# Configuration (for reading .env and settings)
+python-dotenv
+pydantic-settings

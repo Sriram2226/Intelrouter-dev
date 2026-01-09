@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  # Redis service
+  redis:
+    image: redis:7-alpine
+    container_name: intelrouter-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - intelrouter-network
+    restart: unless-stopped
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: intelrouter-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      # Supabase
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      # Hugging Face
+      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      # Redis (use service name for Docker networking)
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=${REDIS_DB:-0}
+      # Limits & Budget
+      - DAILY_TOKEN_LIMIT=${DAILY_TOKEN_LIMIT:-100000}
+      - COST_PER_1K_EASY=${COST_PER_1K_EASY:-0.001}
+      - COST_PER_1K_MEDIUM=${COST_PER_1K_MEDIUM:-0.01}
+      - COST_PER_1K_HARD=${COST_PER_1K_HARD:-0.1}
+      # Admin
+      - ADMIN_SECRET_KEY=${ADMIN_SECRET_KEY}
+      # App
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - intelrouter-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 10s
+      retries: 3
+
+  # Vite + React Frontend (Production)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://localhost:8000}
+        - VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
+        - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
+        - VITE_ADMIN_SECRET=${VITE_ADMIN_SECRET:-}
+    container_name: intelrouter-frontend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    depends_on:
+      - backend
+    networks:
+      - intelrouter-network
+    restart: unless-stopped
+
+networks:
+  intelrouter-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+    driver: local

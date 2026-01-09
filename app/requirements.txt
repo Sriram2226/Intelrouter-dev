@@ -1,0 +1,17 @@
+# Backend runtime dependencies
+fastapi
+uvicorn[standard]
+python-dotenv
+supabase
+redis
+httpx
+pydantic
+pydantic-settings
+huggingface_hub
+# ML dependencies (for loading models, not training)
+scikit-learn
+joblib
+numpy
+nltk
+# Token counting (for LLM token estimation)
+transformers
