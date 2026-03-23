@@ -1,21 +1,62 @@
-.env
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+*.py[cod]
+*$py.class
+
+# C extensions
 *.so
-*.egg
-*.egg-info/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Machine Learning / Trained Models
+*.pt
+*.pth
+*.h5
+*.hdf5
+*.pkl
+*.bin
+*.ckpt
+*.safetensors
+*.gguf
+*.onnx
+models/
+checkpoints/
+trained_models/
+weights/
+embeddings/
+
+# Datasets
+*.csv
+*.tsv
+*.jsonl
+data/
+datasets/
+raw_data/
+processed_data/
+
+# Logs and databases
+*.log
+logs/
+*.sqlite3
+db.sqlite3
+
+# Development tools and IDEs
+.vscode/
+.idea/
+.DS_Store
+__pyinstaller/
 dist/
 build/
-.venv/
-venv/
-env/
-ENV/
-*.log
-app/ml/classifier_model.pkl
-.DS_Store
-.idea/
-.vscode/
-env.txt
+*.egg-info/
+.ipynb_checkpoints/

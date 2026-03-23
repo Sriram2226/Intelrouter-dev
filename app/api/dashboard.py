@@ -194,3 +194,39 @@ async def submit_feedback(
             detail=f"Error submitting feedback: {str(e)}"
         )
 
+
+@router.get("/queries/search")
+async def semantic_search_history(
+    q: str,
+    user_info: dict = Depends(verify_jwt),
+):
+    """
+    Semantically search the user's query history.
+    Returns the top 5 most similar past queries.
+    """
+    start_time = time.time()
+    user_id = user_info["user_id"]
+
+    logger.info(f"🔍 SEMANTIC_SEARCH | User: {user_id[:8]}... | Query: '{q[:40]}'...")
+
+    try:
+        from app.utils.vector_search import semantic_search
+        queries = get_user_queries(user_id, limit=200)
+        history = [
+            {
+                "id": query.id,
+                "query_text": query.query_text,
+                "final_label": query.final_label,
+                "model_name": query.model_name,
+                "created_at": query.created_at.isoformat() if query.created_at else None,
+            }
+            for query in queries
+        ]
+        results = semantic_search(q, history, top_k=5)
+        duration = time.time() - start_time
+        logger.info(f"   ✅ Semantic search done | {len(results)} results | Duration: {duration:.3f}s")
+        return {"query": q, "results": results}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(f"   ❌ Search error: {type(e).__name__}: {str(e)} | Duration: {duration:.3f}s", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Search error: {str(e)}")

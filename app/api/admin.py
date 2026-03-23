@@ -219,3 +219,57 @@ async def get_ml_pipeline_info(
         logger.error(f"   ❌ Error getting ML pipeline info: {type(e).__name__}: {str(e)} | Duration: {duration:.3f}s", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Error retrieving ML pipeline info: {str(e)}")
 
+
+@router.get("/ab-stats")
+async def get_ab_stats(
+    user_info: dict = Depends(verify_admin),
+    x_admin_secret: str = Header(None),
+):
+    """Get A/B testing performance breakdown per group (A vs B)."""
+    start_time = time.time()
+    user_id = user_info["user_id"]
+
+    logger.info(f"🧪 ADMIN_AB_STATS | User: {user_id[:8]}...")
+
+    if not x_admin_secret or not verify_admin_secret(x_admin_secret):
+        raise HTTPException(status_code=403, detail="Admin secret required")
+
+    try:
+        from app.db.supabase_client import supabase
+
+        # Fetch queries with ab_group and join usage_logs for cost
+        queries_resp = supabase.table("queries").select("id, ab_group, final_label, routing_source").execute()
+        usage_resp = supabase.table("usage_logs").select("query_id, cost, total_tokens").execute()
+
+        # Build a quick lookup: query_id -> cost/tokens
+        cost_by_query = {}
+        for u in (usage_resp.data or []):
+            cost_by_query[u["query_id"]] = u
+
+        stats = {"A": {"queries": 0, "total_cost": 0.0, "difficulties": {"EASY": 0, "MEDIUM": 0, "HARD": 0}},
+                 "B": {"queries": 0, "total_cost": 0.0, "difficulties": {"EASY": 0, "MEDIUM": 0, "HARD": 0}}}
+
+        for q in (queries_resp.data or []):
+            group = q.get("ab_group") or "A"
+            if group not in stats:
+                continue
+            stats[group]["queries"] += 1
+            label = q.get("final_label", "MEDIUM")
+            if label in stats[group]["difficulties"]:
+                stats[group]["difficulties"][label] += 1
+            usage = cost_by_query.get(q.get("id"))
+            if usage:
+                stats[group]["total_cost"] += usage.get("cost", 0.0)
+
+        # Add avg cost per query
+        for grp in stats:
+            n = stats[grp]["queries"]
+            stats[grp]["avg_cost_per_query"] = round(stats[grp]["total_cost"] / n, 6) if n else 0.0
+
+        duration = time.time() - start_time
+        logger.info(f"   ✅ A/B stats retrieved | Duration: {duration:.3f}s")
+        return {"ab_stats": stats, "split": {"A": "90%", "B": "10%"}}
+    except Exception as e:
+        duration = time.time() - start_time
+        logger.error(f"   ❌ A/B stats error: {str(e)} | Duration: {duration:.3f}s", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error retrieving A/B stats: {str(e)}")

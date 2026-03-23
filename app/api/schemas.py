@@ -5,6 +5,8 @@ from typing import Optional
 class QueryRequest(BaseModel):
     query: str
     difficulty_override: Optional[str] = None
+    has_image: Optional[bool] = False
+    has_document: Optional[bool] = False
 
 
 class QueryResponse(BaseModel):
@@ -13,6 +15,8 @@ class QueryResponse(BaseModel):
     difficulty: str
     routing_source: str
     usage: dict
+    cache_hit: Optional[bool] = False
+    modality: Optional[str] = "text"
 
 
 class UserInfo(BaseModel):

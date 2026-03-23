@@ -19,6 +19,7 @@ class Query(BaseModel):
     final_label: str
     routing_source: str
     model_name: str
+    ab_group: Optional[str] = None
     created_at: Optional[datetime] = None
 
 

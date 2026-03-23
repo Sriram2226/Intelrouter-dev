@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.api import query, dashboard, admin
+from app.api import stream as stream_router
 from app.utils.logger import setup_logger
 
 # Set up structured logging
@@ -82,6 +83,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(query.router)
+app.include_router(stream_router.router)
 app.include_router(dashboard.router)
 app.include_router(admin.router)
 
